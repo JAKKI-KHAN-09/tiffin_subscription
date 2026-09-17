@@ -6,6 +6,8 @@ function AddCustomer() {
     phone: "",
     address: ""
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [message, setMessage] = useState({ type: "", text: "" });
 
   const handleChange = (e) => {
     setForm({
@@ -16,17 +18,37 @@ function AddCustomer() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
+    setMessage({ type: "", text: "" });
 
-    const response = await fetch("http://localhost:8000/api/customers", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(form)
-    });
+    try {
+      const response = await fetch("http://localhost:8000/api/customers", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(form)
+      });
 
-    const data = await response.json();
-    console.log(data);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || "Unable to add customer");
+      }
+
+      setMessage({
+        type: "success",
+        text: `Customer added successfully: ${data.name}`
+      });
+      setForm({ name: "", phone: "", address: "" });
+    } catch (error) {
+      setMessage({
+        type: "error",
+        text: error.message || "Something went wrong while adding customer"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -46,6 +68,7 @@ function AddCustomer() {
             placeholder="Customer Name"
             value={form.name}
             onChange={handleChange}
+            required
           />
         </label>
 
@@ -56,6 +79,7 @@ function AddCustomer() {
             placeholder="Phone Number"
             value={form.phone}
             onChange={handleChange}
+            required
           />
         </label>
 
@@ -69,7 +93,15 @@ function AddCustomer() {
           />
         </label>
 
-        <button type="submit" className="primary-btn full-width-btn">Add Customer</button>
+        {message.text && (
+          <div className={`full-width ${message.type === "success" ? "success-message" : "error-message"}`}>
+            {message.text}
+          </div>
+        )}
+
+        <button type="submit" className="primary-btn full-width-btn" disabled={isSubmitting}>
+          {isSubmitting ? "Adding..." : "Add Customer"}
+        </button>
       </form>
     </div>
   );
